@@ -112,38 +112,36 @@ export async function poolRoutes(fastify: FastifyInstance){
     onRequest: [authenticate]
   }, async (request)=> {
     const pools = await prisma.pool.findMany({
-      where: {
+      include: {
+        owner: {
+          select: {
+            name: true,
+          }
+        },
+        participants:{
+          select: {
+            id: true,
+          user: {
+            select: {
+              avatarUrl: true
+            }}
+          },
+          take: 4,
+
+        },
+        _count: {
+          select: {
+            participants: true
+          }
+        }
+       },
+       where: {
         participants: {
           some: {
             userId: request.user.sub
           }
         }
       },
-      include: {
-        _count: {
-          select: {
-            participants: true
-          }
-        },
-        participants:{
-          select: {
-            id: true,
-
-            user: {
-              select: {
-                avatarUrl: true
-              }}
-          },
-          take: 4,
-
-        },
-        owner: {
-          select: {
-            name: true,
-            id: true
-          }
-        }
-      }
     })
 
     return { pools }
@@ -159,34 +157,32 @@ export async function poolRoutes(fastify: FastifyInstance){
   const { id } = getPoolsParams.parse(request.params)
 
   const pool = await prisma.pool.findUnique({
-    where: {
-      id,
-    },
     include: {
-      _count: {
+      owner: {
         select: {
-          participants: true
+          name: true,
         }
       },
       participants:{
         select: {
           id: true,
-
-          user: {
-            select: {
-              avatarUrl: true
-            }}
+        user: {
+          select: {
+            avatarUrl: true
+          }}
         },
         take: 4,
 
       },
-      owner: {
+      _count: {
         select: {
-          name: true,
-          id: true
+          participants: true
         }
       }
-    }
+     },
+    where: {
+      id,
+    },
   })
   return { pool }
 })
